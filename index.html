@@ -38,7 +38,8 @@
   /* where-I-am bar */
   .where { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:12px; }
   .where .row select { font-size:16px; padding:10px; }
-  .where .bk { flex:0 0 108px; }
+  .where .bk { display:none; } /* Book 6 only for now */
+  #safe, .curve, .card.arc { display:none; } /* still computed, just not shown */
   .done { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-top:10px; font-size:15px; padding:11px; border-radius:12px; background:#100d0b; color:var(--dim); }
   .done.on { background:var(--good); color:#0f1a0b; border-color:var(--good); font-weight:700; }
   .done .bx { width:20px; height:20px; border-radius:6px; border:2px solid currentColor; display:inline-flex; align-items:center; justify-content:center; font-size:13px; line-height:1; }
@@ -54,14 +55,15 @@
   .title { font-size:19px; font-weight:600; margin:0; }
   .meta { color:var(--dim); font-size:13px; margin:2px 0 0; }
   .page { color:var(--accent); font-size:15px; margin:4px 0 12px; min-height:22px; }
-  .scrub { position:relative; padding-top:34px; }
+  .scrub { position:relative; padding-top:4px; }
   .curve { position:absolute; left:0; right:0; top:0; width:100%; height:32px; pointer-events:none; display:block; }
   input[type=range] { width:100%; accent-color:var(--accent); margin:0; height:28px; }
   .times { display:flex; justify-content:space-between; color:var(--dim); font-size:13px; font-variant-numeric:tabular-nums; }
   .transport { display:flex; justify-content:space-between; align-items:center; margin-top:12px; }
   .transport button { min-width:56px; height:52px; font-size:15px; padding:0 8px; }
   .transport #play { width:72px; height:72px; border-radius:50%; border:0; background:var(--accent); color:#1a0f08; font-size:28px; font-weight:700; }
-  #status { color:var(--dim); font-size:14px; margin:12px 0 0; min-height:21px; }
+  #status { color:var(--dim); font-size:14px; margin:12px 0 0; }
+  #status:empty { margin:0; }
   .mix { display:grid; grid-template-columns:90px 1fr 44px; gap:8px 10px; align-items:center; font-size:15px; margin-bottom:16px; }
   .mix span:last-child { color:var(--dim); text-align:right; font-variant-numeric:tabular-nums; font-size:13px; }
   .check { display:flex; gap:10px; align-items:center; font-size:15px; text-transform:none; letter-spacing:0; color:var(--ink); margin:14px 0 0; }
@@ -210,10 +212,10 @@
         <button id="fwd" aria-label="Forward 30 seconds">+30s</button>
         <button id="next" aria-label="Next chapter">⏭</button>
       </div>
-      <p id="status">Press play to build the track for your chapter.</p>
+      <p id="status"></p>
       <audio id="player" preload="auto"></audio>
       <div class="row" style="margin-top:12px">
-        <div class="grow"><input id="pageIn" type="number" inputmode="numeric" min="1" placeholder="Jump to KOReader page" aria-label="Jump to KOReader page"></div>
+        <div class="grow"><input id="pageIn" type="number" inputmode="numeric" min="1" placeholder="Jump to page" aria-label="Jump to page"></div>
         <button id="pageGo">Go</button>
       </div>
       <p class="note" id="pageNote"></p>
@@ -618,7 +620,7 @@ const BYNAME = new Map(GLOSS.map(e => [e.t, e]));
 /* ---------- where I am: book, chapter, finished ---------- */
 const prefs = Object.assign({ mpp: 0.9, book: 6, ch: 0, done: false,  pos: {} },
   (() => { try { return JSON.parse(localStorage.getItem("crawl") || "{}"); } catch (e) { return {}; } })());
-if (!BOOKS[prefs.book]) prefs.book = 5;
+if (prefs.book !== 6) { prefs.book = 6; prefs.ch = 0; prefs.done = false; } /* Book 6 only for now */
 function save() { prefs.savedAt = Date.now(); try { localStorage.setItem("crawl", JSON.stringify(prefs)); } catch (e) {} if (typeof queueSync === "function") queueSync(); }
 const chaps = () => BOOKS[prefs.book].chapters;
 function name(c) { return c.label || ("Chapter " + c.n); }
@@ -985,7 +987,7 @@ window.addEventListener("pagehide", () => { clearTimeout(syncT); pushSync(); });
 function applyRemote(s) {
   if (!s) { pushSync(); return; } let r; try { r = JSON.parse(s); } catch (e) { return; }
   if ((r.savedAt || 0) <= (prefs.savedAt || 0)) { if ((prefs.savedAt || 0) > (r.savedAt || 0)) pushSync(); return; }
-  Object.assign(prefs, r); if (!BOOKS[prefs.book]) prefs.book = 5; try { localStorage.setItem("crawl", JSON.stringify(prefs)); } catch (e) {}
+  Object.assign(prefs, r); if (prefs.book !== 6) { prefs.book = 6; prefs.ch = 0; prefs.done = false; } /* Book 6 only for now */ try { localStorage.setItem("crawl", JSON.stringify(prefs)); } catch (e) {}
   fillChapters(); paintWhere(); refreshAll(); setStatus("Synced: picked up your place from your other session.");
 }
 try { google.script.run.withSuccessHandler(applyRemote).withFailureHandler(() => {}).loadState(); } catch (e) {}
